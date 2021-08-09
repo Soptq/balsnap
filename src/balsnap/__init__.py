@@ -1,2 +1,4 @@
-from balsnap import *
-from utils import *
+from balsnap.balsnap import *
+from balsnap.utils import *
+
+__version__ = "0.0.2"
