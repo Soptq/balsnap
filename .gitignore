@@ -1,2 +1,6 @@
-./.idea
-./venv
+/.idea/
+/venv/
+/dist/
+/build/
+
+/src/balsnap.egg-info

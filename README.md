@@ -13,13 +13,14 @@ Features:
 ### Pypi
 
 ```
-
+pip install balsnap
 ```
 
 ### Build from source
 
 ```
-
+git clone https://github.com/Soptq/balsnap.git
+pip install -e balsnap
 ```
 
 ## Quick Start
