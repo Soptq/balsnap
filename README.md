@@ -8,6 +8,8 @@ Features:
 * Easy to use and modify: delivered with documentations.
 * Fast: using [multicall](https://github.com/makerdao/multicall) to reduce JSON RPC requests.
 
+**Any suggestion or possible improvement on this project is welcomed and appreciated!**
+
 ## Installation
 
 ### Pypi
