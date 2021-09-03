@@ -2,6 +2,7 @@ import os, time, datetime
 
 from typing import Union, List
 
+import pandas as pd
 from brownie import multicall
 from brownie.network.account import Account
 from brownie.network.contract import Contract
