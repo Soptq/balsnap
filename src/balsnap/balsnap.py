@@ -83,13 +83,12 @@ class BalSnap:
         """
         for contract_address in self.contract_info.keys():
             task_snapshot_accounts = [sa for sa in self.snapshot_accounts if sa.contract_address == contract_address]
-            decimals = int(self.contract_info[contract_address]["decimals"])
             with multicall(Web3.toChecksumAddress(self.multicall2_address)):
                 for task_snapshot_account in task_snapshot_accounts:
                     try:
                         task_snapshot_account.add_balance(
                             float(self.contract_info[contract_address]["instance"].balanceOf(
-                                task_snapshot_account.account_address)) / (10 ** decimals)
+                                task_snapshot_account.account_address)) / (10 ** int(self.contract_info[contract_address]["decimals"]))
                         )
                     except TypeError:
                         task_snapshot_account.add_balance(0)
@@ -180,7 +179,7 @@ class BalSnap:
         contract_address = snapshot_account.contract_address
         if contract_address not in self.contract_info:
             self.contract_info[contract_address] = {}
-            self.contract_info[contract_address]["instance"] = Contract.from_explorer(contract_address)
+            self.contract_info[contract_address]["instance"] = Contract(contract_address)
             self.contract_info[contract_address]["name"] = self.contract_info[contract_address]["instance"].name()
             self.contract_info[contract_address]["symbol"] = self.contract_info[contract_address]["instance"].symbol()
             self.contract_info[contract_address]["decimals"] = self.contract_info[contract_address][
