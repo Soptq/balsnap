@@ -114,7 +114,7 @@ class BalSnap:
         :param contract_address_filtered: a str or a list of str
                 to indicate what contract addresses to be filtered in the table.
         """
-        df = {"Account": [], "Contract": [], "Balance": [], "Time": []}
+        df = {"Account": [], "Contract": [], "Symbol": [], "Balance": []}
         for snapshot_account in self.snapshot_accounts:
             if snapshot_account.snapshot_records[-1].value <= 0:
                 continue
