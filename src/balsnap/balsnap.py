@@ -11,6 +11,7 @@ from web3 import Web3
 from prettytable import PrettyTable
 
 from collections import namedtuple
+from tqdm import tqdm
 import warnings
 
 snapshot_record = namedtuple("snapshot_record", ["timestamp", "value"])
@@ -76,26 +77,36 @@ class BalSnap:
         for snapshot_account in snapshot_accounts:
             self._add_if_account_not_exists(snapshot_account)
 
-
     def snapshot(self):
         """
         Using multicall2 to snapshot balances of all added snapshot accounts.
         """
         for contract_address in self.contract_info.keys():
             task_snapshot_accounts = [sa for sa in self.snapshot_accounts if sa.contract_address == contract_address]
+            print(f"Querying Contract {contract_address}...")
+            multicall_results = []
             with multicall(Web3.toChecksumAddress(self.multicall2_address)):
-                for task_snapshot_account in task_snapshot_accounts:
+                for i, task_snapshot_account in enumerate(tqdm(task_snapshot_accounts)):
+                    if i % 1000 == 0:
+                        multicall.flush()
                     try:
-                        task_snapshot_account.add_balance(
-                            float(self.contract_info[contract_address]["instance"].balanceOf(
-                                task_snapshot_account.account_address)) / (10 ** int(self.contract_info[contract_address]["decimals"]))
-                        )
+                        multicall_results.append((task_snapshot_account.account_address,
+                                                  self.contract_info[contract_address]["instance"].balanceOf(
+                                                      task_snapshot_account.account_address)
+                                                  ))
                     except TypeError:
-                        task_snapshot_account.add_balance(0)
+                        warnings.warn(f"Failed to query balance: "
+                                      f"account address: {task_snapshot_account.account_address},"
+                                      f"contract address: {contract_address}")
+                        multicall_results.append((task_snapshot_account.account_address, 0.))
+            decimals = 10 ** int(self.contract_info[contract_address]["decimals"])
+            for (account_address, balance) in multicall_results:
+                task_snapshot_account = next(
+                    (x for x in task_snapshot_accounts if x.account_address == account_address), None)
+                task_snapshot_account.add_balance(float(balance) / decimals)
 
-
-    def build_df(self, account_address_filtered: Union[str, List[str]]=None,
-                    contract_address_filtered: Union[str, List[str]]=None):
+    def build_df(self, account_address_filtered: Union[str, List[str]] = None,
+                 contract_address_filtered: Union[str, List[str]] = None):
         """
         Build a pandas dataframe with all retrieved data.
         :param account_address_filtered: a str or a list of str
@@ -128,7 +139,6 @@ class BalSnap:
             df['Balance'].append(snapshot_account.snapshot_records[-1].value)
 
         return pd.DataFrame(df)
-
 
     def print_table(self, abstract_digits: int = 4,
                     account_address_filtered: Union[str, List[str]] = None,
