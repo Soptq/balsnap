@@ -76,19 +76,60 @@ class BalSnap:
         for snapshot_account in snapshot_accounts:
             self._add_if_account_not_exists(snapshot_account)
 
+
     def snapshot(self):
         """
         Using multicall2 to snapshot balances of all added snapshot accounts.
         """
         for contract_address in self.contract_info.keys():
             task_snapshot_accounts = [sa for sa in self.snapshot_accounts if sa.contract_address == contract_address]
+            decimals = int(self.contract_info[contract_address]["decimals"])
             with multicall(Web3.toChecksumAddress(self.multicall2_address)):
                 for task_snapshot_account in task_snapshot_accounts:
-                    task_snapshot_account.add_balance(
-                        float(self.contract_info[contract_address]["instance"].balanceOf(
-                            task_snapshot_account.account_address
-                        )) / (10 ** int(self.contract_info[contract_address]["decimals"]))
-                    )
+                    try:
+                        task_snapshot_account.add_balance(
+                            float(self.contract_info[contract_address]["instance"].balanceOf(
+                                task_snapshot_account.account_address)) / (10 ** decimals)
+                        )
+                    except TypeError:
+                        task_snapshot_account.add_balance(0)
+
+
+    def build_df(self, account_address_filtered: Union[str, List[str]]=None,
+                    contract_address_filtered: Union[str, List[str]]=None):
+        """
+        Build a pandas dataframe with all retrieved data.
+        :param account_address_filtered: a str or a list of str
+                to indicate what account addresses to be filtered in the table.
+        :param contract_address_filtered: a str or a list of str
+                to indicate what contract addresses to be filtered in the table.
+        """
+        df = {"Account": [], "Contract": [], "Balance": [], "Time": []}
+        for snapshot_account in self.snapshot_accounts:
+            if snapshot_account.snapshot_records[-1].value <= 0:
+                continue
+            account_address = snapshot_account.account_address
+            contract_address = snapshot_account.contract_address
+
+            if account_address_filtered is not None:
+                if isinstance(account_address_filtered, str) and account_address == account_address_filtered:
+                    return
+                if isinstance(account_address_filtered, list) and account_address in account_address_filtered:
+                    return
+
+            if contract_address_filtered is not None:
+                if isinstance(contract_address_filtered, str) and contract_address == contract_address_filtered:
+                    return
+                if isinstance(contract_address_filtered, list) and contract_address in contract_address_filtered:
+                    return
+
+            df['Account'].append(self.abstract_address(account_address))
+            df['Contract'].append(self.abstract_address(contract_address))
+            df['Symbol'].append(self._get_contract_symbol(contract_address))
+            df['Balance'].append(snapshot_account.snapshot_records[-1].value)
+
+        return pd.DataFrame(df)
+
 
     def print_table(self, abstract_digits: int = 4,
                     account_address_filtered: Union[str, List[str]] = None,
