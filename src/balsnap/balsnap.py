@@ -89,21 +89,21 @@ class BalSnap:
                 for i, task_snapshot_account in enumerate(tqdm(task_snapshot_accounts)):
                     if i % 1000 == 0:
                         multicall.flush()
-                    try:
-                        multicall_results.append((task_snapshot_account.account_address,
-                                                  self.contract_info[contract_address]["instance"].balanceOf(
-                                                      task_snapshot_account.account_address)
-                                                  ))
-                    except TypeError:
-                        warnings.warn(f"Failed to query balance: "
-                                      f"account address: {task_snapshot_account.account_address},"
-                                      f"contract address: {contract_address}")
-                        multicall_results.append((task_snapshot_account.account_address, 0.))
+                    multicall_results.append((task_snapshot_account.account_address,
+                                              self.contract_info[contract_address]["instance"].balanceOf(
+                                                  task_snapshot_account.account_address)
+                                              ))
             decimals = 10 ** int(self.contract_info[contract_address]["decimals"])
             for (account_address, balance) in multicall_results:
                 task_snapshot_account = next(
                     (x for x in task_snapshot_accounts if x.account_address == account_address), None)
-                task_snapshot_account.add_balance(float(balance) / decimals)
+                try:
+                    task_snapshot_account.add_balance(float(balance) / decimals)
+                except TypeError:
+                    warnings.warn(f"Failed to query balance: "
+                                  f"account address: {account_address},"
+                                  f"contract address: {contract_address}")
+                    task_snapshot_account.add_balance(0.)
 
     def build_df(self, account_address_filtered: Union[str, List[str]] = None,
                  contract_address_filtered: Union[str, List[str]] = None):
